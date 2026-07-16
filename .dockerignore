@@ -1,0 +1,30 @@
+# VCS / local env
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+!.env.staging.example
+
+# Local runtimes and tools
+.venv
+.tools
+artifacts
+.cache
+models
+qdrant_storage
+.qdrant_storage
+.qdrant-initialized
+
+# Caches and tests (not required by current Dockerfile)
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+tests
+
+# Local IDE / OS
+.vscode
+.idea
+.DS_Store

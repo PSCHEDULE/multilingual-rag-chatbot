@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Multilingual RAG Chatbot — Widget Demo</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 32px;
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      code {
+        background: #e2e8f0;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      #inline-mount {
+        margin-top: 24px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 8px;
+        border: 1px solid #e2e8f0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Widget demo</h1>
+      <p>
+        Start the API with CORS open, then open this file (or serve it). Point
+        <code>apiBase</code> at <code>http://127.0.0.1:8000</code>.
+      </p>
+      <pre><code>uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+# MOCK_LLM=1 for offline tokens
+</code></pre>
+      <h2>Inline mode</h2>
+      <div id="inline-mount"></div>
+    </main>
+    <script src="./chatbot-widget.js" data-mrc-autoload="false"></script>
+    <script>
+      // Floating button (page corner)
+      MultilingualChatbot.init({
+        apiBase: "http://127.0.0.1:8000",
+        mode: "floating",
+      });
+      // Inline panel
+      MultilingualChatbot.init({
+        apiBase: "http://127.0.0.1:8000",
+        mode: "inline",
+        mount: "#inline-mount",
+      });
+    </script>
+  </body>
+</html>

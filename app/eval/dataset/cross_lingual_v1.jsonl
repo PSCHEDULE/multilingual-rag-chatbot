@@ -1,0 +1,12 @@
+{"id": "refund_en", "language": "en", "intent": "refund_policy", "question": "What is the refund policy?", "ground_truth": "Customers may request a refund within 14 days of purchase if the product has not been substantially used."}
+{"id": "refund_ko", "language": "ko", "intent": "refund_policy", "question": "환불 정책이 어떻게 되나요?", "ground_truth": "구매 후 14일 이내이며 상품을 실질적으로 사용하지 않은 경우 환불을 요청할 수 있습니다."}
+{"id": "refund_ja", "language": "ja", "intent": "refund_policy", "question": "返金ポリシーを教えてください。", "ground_truth": "商品を実質的に使用していない場合、購入から14日以内であれば返金を申請できます。"}
+{"id": "refund_zh", "language": "zh", "intent": "refund_policy", "question": "退款政策是什么？", "ground_truth": "如商品未被实质使用，可在购买后 14 天内申请退款。"}
+{"id": "ship_en", "language": "en", "intent": "shipping", "question": "How long does standard shipping take?", "ground_truth": "Standard shipping takes 3–7 business days."}
+{"id": "ship_ko", "language": "ko", "intent": "shipping", "question": "일반 배송은 얼마나 걸리나요?", "ground_truth": "일반 배송은 영업일 기준 3–7일이 소요됩니다."}
+{"id": "ship_ja", "language": "ja", "intent": "shipping", "question": "通常配送は何日かかりますか？", "ground_truth": "通常配送は営業日で3〜7日かかります。"}
+{"id": "ship_zh", "language": "zh", "intent": "shipping", "question": "标准配送需要多久？", "ground_truth": "标准配送需 3–7 个工作日。"}
+{"id": "sec_en", "language": "en", "intent": "account_security", "question": "How do I enable two-factor authentication?", "ground_truth": "Enable two-factor authentication (2FA) under Settings → Security."}
+{"id": "sec_ko", "language": "ko", "intent": "account_security", "question": "2단계 인증은 어떻게 켜나요?", "ground_truth": "설정 → 보안에서 2단계 인증(2FA)을 켜 주세요."}
+{"id": "sec_ja", "language": "ja", "intent": "account_security", "question": "二要素認証の有効化方法は？", "ground_truth": "設定 → セキュリティで二要素認証（2FA）を有効にしてください。"}
+{"id": "sec_zh", "language": "zh", "intent": "account_security", "question": "如何开启双重验证？", "ground_truth": "请在“设置 → 安全”中启用双重验证（2FA）。"}

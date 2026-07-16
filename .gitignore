@@ -1,0 +1,56 @@
+# uv / Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+artifacts/
+
+# Grok Build
+.grok/
+
+# Environment — keep example templates tracked
+.env
+.env.*
+!.env.example
+!.env.staging.example
+
+# Local tools and vector database state
+.tools/
+.qdrant-initialized
+qdrant_storage/
+.qdrant_storage/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model / data caches
+.cache/
+models/
+
+# Local snapshots / temp
+snapshots/
