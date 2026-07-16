@@ -72,4 +72,9 @@ services:
       start_period: 240s
 
 volumes:
+  # Pre-seeded storage from Step 3-D-F2 — never recreate anonymously
+  qdrant_data:
+    external: true
+    name: multilingual-rag-chatbot_qdrant_data
+
   huggingface_cache:
