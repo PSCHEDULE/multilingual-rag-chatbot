@@ -1,13 +1,17 @@
-# Multi-stage production image
+# Multi-stage production image (BGE-capable via optional dependency group)
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-COPY pyproject.toml README.md ./
+# Lock + project metadata first (cache-friendly; large torch layer)
+COPY pyproject.toml uv.lock README.md ./
+# Install third-party deps including BGE group (not dev tools)
+RUN uv sync --frozen --no-dev --group bge --no-install-project
+
 COPY app ./app
-# Install project + deps into /.venv
-RUN uv sync --no-dev --no-install-project && uv sync --no-dev
+# Install project into the same venv
+RUN uv sync --frozen --no-dev --group bge
 
 FROM python:3.12-slim-bookworm AS runtime
 
