@@ -9,9 +9,27 @@
 #   docker compose --env-file .env.staging.example \
 #     -f docker-compose.yml -f docker-compose.staging.yml config
 #
-# Do not start services in Step 3-C. Do not commit real secrets.
+# Do not commit real secrets.
 
 services:
+  # One-shot: fix named-volume ownership for non-root appuser (UID/GID 10001).
+  # Does not start a server, download models, or receive secrets.
+  hf_cache_init:
+    image: multilingual-rag-chatbot:staging-bge-a30b89e
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        set -eu;
+        mkdir -p /home/appuser/.cache/huggingface;
+        chown 10001:10001 /home/appuser/.cache/huggingface;
+        chmod 700 /home/appuser/.cache/huggingface;
+        stat -c 'mode=%a uid=%u gid=%g path=%n'
+        /home/appuser/.cache/huggingface
+    volumes:
+      - huggingface_cache:/home/appuser/.cache/huggingface
+    restart: "no"
+
   api:
     # Commit-verified BGE runtime image (built from a30b89e Dockerfile)
     image: multilingual-rag-chatbot:staging-bge-a30b89e
@@ -33,6 +51,12 @@ services:
       # QDRANT_API_KEY intentionally omitted for local unauthenticated Qdrant
     volumes:
       - huggingface_cache:/home/appuser/.cache/huggingface
+    # Preserve Qdrant health dependency; require cache ownership init before API
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      hf_cache_init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
