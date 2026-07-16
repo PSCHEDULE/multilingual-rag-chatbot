@@ -1,0 +1,51 @@
+# Provisional staging override for BGE cutover validation.
+# Not a production deployment platform.
+#
+# Usage (after creating a private .env.staging from .env.staging.example):
+#   docker compose --env-file .env.staging \
+#     -f docker-compose.yml -f docker-compose.staging.yml config
+#
+# Static validation with the secret-free template:
+#   docker compose --env-file .env.staging.example \
+#     -f docker-compose.yml -f docker-compose.staging.yml config
+#
+# Do not start services in Step 3-C. Do not commit real secrets.
+
+services:
+  api:
+    # Commit-verified BGE runtime image (built from a30b89e Dockerfile)
+    image: multilingual-rag-chatbot:staging-bge-a30b89e
+    # Replace base development port mapping (Compose merge would otherwise append)
+    ports: !override
+      - "${STAGING_API_PORT:?STAGING_API_PORT is required}:8000"
+    # Replace base env map so development defaults (e.g. MOCK_LLM:-true) do not merge in
+    environment: !override
+      APP_ENV: ${APP_ENV:?APP_ENV is required}
+      QDRANT_URL: ${QDRANT_URL:?QDRANT_URL is required}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:?QDRANT_COLLECTION is required}
+      PREFER_BGE: ${PREFER_BGE:?PREFER_BGE is required}
+      RETRIEVAL_LANGUAGE_FILTER: ${RETRIEVAL_LANGUAGE_FILTER:?RETRIEVAL_LANGUAGE_FILTER is required}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:?EMBEDDING_MODEL is required}
+      MOCK_LLM: ${MOCK_LLM:?MOCK_LLM is required}
+      LLM_PROVIDER: ${LLM_PROVIDER:?LLM_PROVIDER is required}
+      LLM_MODEL: ${LLM_MODEL:?LLM_MODEL is required}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required}
+      # QDRANT_API_KEY intentionally omitted for local unauthenticated Qdrant
+    volumes:
+      - huggingface_cache:/home/appuser/.cache/huggingface
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      # BGE CPU first-load can exceed the base 30s start_period
+      start_period: 240s
+
+volumes:
+  huggingface_cache:
