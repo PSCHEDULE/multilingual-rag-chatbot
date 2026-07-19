@@ -94,6 +94,22 @@ def sparse_bm25_vector(text: str, *, dim_mod: int = 30_000) -> dict[str, list[An
 
 
 @lru_cache
+def _get_dense_embedder_cached(
+    prefer_bge: bool,
+    resolved_model_name: str,
+) -> DenseEmbedder:
+    """
+    Construct and cache a dense embedder by canonical identity.
+
+    Cache key is only ``(prefer_bge, resolved_model_name)``. Callers must resolve
+    ``model_name=None`` to the configured model before invoking this function.
+    ``require_bge`` is intentionally not part of the key (validation semantics only).
+    """
+    if prefer_bge:
+        return BGEEmbedder(resolved_model_name)
+    return OfflineHashEmbedder()
+
+
 def get_dense_embedder(
     prefer_bge: bool = True,
     model_name: str | None = None,
@@ -106,21 +122,46 @@ def get_dense_embedder(
     When ``prefer_bge`` is True, attempts BGE-M3 (or ``model_name`` / settings).
     On failure, falls back to OfflineHashEmbedder unless ``require_bge`` is True
     (used by Stage 1 smoke tests so fallback cannot look successful).
+
+    Semantically equivalent calls share one cached instance. In particular::
+
+        get_dense_embedder(prefer_bge=True, model_name="BAAI/bge-m3", require_bge=True)
+        get_dense_embedder(prefer_bge=True)
+
+    resolve to the same cache key when the configured embedding model is
+    ``BAAI/bge-m3``.
     """
-    cfg = get_settings()
-    name = model_name or cfg.embedding_model
-    if prefer_bge:
-        try:
-            return BGEEmbedder(name)
-        except Exception as exc:  # noqa: BLE001
-            if require_bge:
-                raise RuntimeError(
-                    f"BGE embedder required but failed to load ({name}): {exc}"
-                ) from exc
-            logger.warning("BGE embedder unavailable (%s); using OfflineHashEmbedder", exc)
-    elif require_bge:
+    if require_bge and not prefer_bge:
         raise RuntimeError("require_bge=True but prefer_bge=False")
-    return OfflineHashEmbedder()
+
+    cfg = get_settings()
+    # Resolve before cache lookup so model_name=None and explicit default share a key.
+    name = model_name or cfg.embedding_model
+
+    if not prefer_bge:
+        return _get_dense_embedder_cached(False, name)
+
+    try:
+        emb = _get_dense_embedder_cached(True, name)
+    except Exception as exc:  # noqa: BLE001
+        if require_bge:
+            raise RuntimeError(
+                f"BGE embedder required but failed to load ({name}): {exc}"
+            ) from exc
+        logger.warning("BGE embedder unavailable (%s); using OfflineHashEmbedder", exc)
+        return _get_dense_embedder_cached(False, name)
+
+    if require_bge and not isinstance(emb, BGEEmbedder):
+        raise RuntimeError(
+            f"BGE embedder required but failed to load ({name}): "
+            f"got {type(emb).__name__}"
+        )
+    return emb
+
+
+# Tests and diagnostics may reset the model cache between cases.
+get_dense_embedder.cache_clear = _get_dense_embedder_cached.cache_clear  # type: ignore[attr-defined]
+get_dense_embedder.cache_info = _get_dense_embedder_cached.cache_info  # type: ignore[attr-defined]
 
 
 def embed_for_index(

@@ -103,7 +103,7 @@ def run_retrieval_startup_checks(settings: Settings | None = None) -> dict[str, 
 
     from app.retrieval.embeddings import BGEEmbedder, get_dense_embedder
 
-    get_dense_embedder.cache_clear()
+    # Use the canonical factory without clearing: startup and request share one instance.
     emb = get_dense_embedder(
         prefer_bge=True,
         model_name=cfg.embedding_model,

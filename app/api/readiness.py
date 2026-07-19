@@ -31,8 +31,9 @@ def _validate_embedder_once(cfg: Settings) -> dict[str, Any]:
     """
     Load/validate embedder **once** (startup path only).
 
-    Does not call ``cache_clear`` on the hot path of /ready. May clear once at
-    startup so the first load reflects current settings.
+    Uses the canonical ``get_dense_embedder`` cache (no ``cache_clear``) so the
+    startup guard, readiness snapshot, and request retrieval share one BGE
+    instance. Does not call ``cache_clear`` on the hot path of /ready either.
     """
     if not cfg.prefer_bge:
         emb = OfflineHashEmbedder()
@@ -43,8 +44,6 @@ def _validate_embedder_once(cfg: Settings) -> dict[str, Any]:
             "expected_dim": EXPECTED_HASH_DIM,
         }
 
-    # One clear at startup so a process that flipped env before restart is clean
-    get_dense_embedder.cache_clear()
     emb = get_dense_embedder(
         prefer_bge=True,
         model_name=cfg.embedding_model,
