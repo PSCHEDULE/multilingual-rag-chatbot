@@ -1,5 +1,7 @@
 # Multilingual RAG Customer Support Chatbot - Project Specification
 
+English | [한국어](SPEC.ko.md)
+
 **Date:** 2026-07-20
 **Status:** M0–M8 technical implementation complete; **M8-B staging BGE validation PASS**; production cutover **planning may begin**; production deployment is **not** approved or complete; **M9** production packaging is **not started**
 

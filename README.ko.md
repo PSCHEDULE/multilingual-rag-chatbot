@@ -1,22 +1,31 @@
 # Multilingual RAG Customer Support Chatbot
 
-English | [한국어](README.ko.md)
+> **한국어 번역본**
+>
+> 기준 영문 문서: [README.md](README.md)
+> 번역 기준 리포지토리 커밋:
+> `b6ecd66d9b07d95c2d2fafabab30c5ab58947a46`
+> 동기화 날짜: 2026-07-20
+>
+> 영문 문서와 내용이 충돌할 경우 영문 문서를 우선합니다.
 
-Production-oriented RAG chatbot with first-class support for **Korean, English, Japanese, and Chinese**.
+[English](README.md) | 한국어
 
-| Layer | Choice |
+**한국어, 영어, 일본어, 중국어**를 1급으로 지원하는 프로덕션 지향 RAG 챗봇입니다.
+
+| 계층 | 선택 |
 |-------|--------|
 | API | FastAPI (async) + SSE |
 | Orchestration | LangGraph |
-| Retrieval | Qdrant hybrid (dense + sparse) · **BGE-M3** when `PREFER_BGE=true` (hash offline fallback) |
+| Retrieval | Qdrant hybrid (dense + sparse) · `PREFER_BGE=true` 일 때 **BGE-M3** (hash offline fallback) |
 | Reranker | BGE-reranker-v2-m3 (lexical offline fallback) |
 | LLM (default) | **OpenAI gpt-4o-mini** (`LLM_PROVIDER=openai`) |
 | Eval | RAGAS-style runner (`app/eval`); faithfulness gate; AR diagnostic |
 | Observability | Langfuse (optional; no-op without keys) |
 | Deps | **uv** + `pyproject.toml` (Python 3.12); optional **`bge`** group for BGE-M3 |
 
-**Status (2026-07-20):** M0–M7 complete; **M8-A** FAQ atomic chunking and **M8-B** BGE-M3 technical implementation complete; **staging BGE cutover validation** complete. Production cutover planning and **M9** packaging are next.
-See [MILESTONES.md](MILESTONES.md) · [SPEC.md](SPEC.md) · [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md).
+**상태 (2026-07-20):** M0–M7 complete; **M8-A** FAQ atomic chunking 및 **M8-B** BGE-M3 기술 구현 complete; **staging BGE cutover validation** complete. Production cutover planning 및 **M9** packaging이 다음 단계입니다.
+See [MILESTONES.md](MILESTONES.md) · [SPEC.ko.md](SPEC.ko.md) · [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md).
 
 ## Architecture
 
@@ -77,7 +86,7 @@ Inline mode:
 </script>
 ```
 
-Demo page: [widget/demo.html](widget/demo.html) · SSE contract: [docs/sse-contract.md](docs/sse-contract.md)
+데모 페이지: [widget/demo.html](widget/demo.html) · SSE contract: [docs/sse-contract.md](docs/sse-contract.md)
 
 ### Nginx note for SSE
 
@@ -104,7 +113,7 @@ proxy_read_timeout 3600;
 
 ## Evaluation (RAGAS runner)
 
-Cross-lingual set: `app/eval/dataset/cross_lingual_v1.jsonl` (≥3 intents × 4 languages).
+교차 언어 데이터셋: `app/eval/dataset/cross_lingual_v1.jsonl` (≥3 intents × 4 languages).
 
 | Tier | Faithfulness | Answer relevancy |
 |------|--------------|------------------|
@@ -125,13 +134,13 @@ uv run python -m app.eval.run_ragas \
   --output artifacts/eval/report_initial.json
 ```
 
-Reports always include overall metrics and **`by_language`** breakdown.
+리포트에는 항상 전체 지표와 **`by_language`** 분해가 포함됩니다.
 
 ## Docs
 
-- [docs/chunking.md](docs/chunking.md) — CJK semantic chunking + manual review
-- [docs/retrieval.md](docs/retrieval.md) — hybrid + reranker latency/cost
-- [docs/sse-contract.md](docs/sse-contract.md) — frozen widget SSE events
+- [docs/chunking.md](docs/chunking.md) — CJK 시맨틱 청킹 + 수동 리뷰
+- [docs/retrieval.md](docs/retrieval.md) — hybrid + reranker 지연/비용
+- [docs/sse-contract.md](docs/sse-contract.md) — 고정된 위젯 SSE 이벤트
 
 ## Development
 
@@ -142,7 +151,7 @@ uv run pytest tests/unit -q
 ./scripts/e2e_smoke.sh http://127.0.0.1:8000
 ```
 
-Integration tests (`pytest -m integration`) require a live Qdrant.
+통합 테스트(`pytest -m integration`)에는 동작 중인 Qdrant가 필요합니다.
 
 ## Docker Compose
 
@@ -155,15 +164,15 @@ curl -sf http://localhost:8000/health
 
 ## Extending languages
 
-1. Add detector aliases in `app/utils/language.py`
-2. Add sample docs under `data/sample_docs/<lang>/`
-3. Add parallel eval rows in `app/eval/dataset/`
-4. Optional: language-specific tokenizer plug-in in chunking fallback
+1. `app/utils/language.py`에 감지기 alias 추가
+2. `data/sample_docs/<lang>/` 아래 샘플 문서 추가
+3. `app/eval/dataset/`에 병렬 eval 행 추가
+4. 선택: 청킹 fallback에 언어별 토크나이저 플러그인
 
 ## Privacy
 
-Do not log raw PII to third-party tracers without redaction. Langfuse is **off** unless keys are set.
+제3자 트레이서에 원본 PII를 마스킹 없이 기록하지 마세요. Langfuse는 키가 설정되지 않으면 **off**입니다.
 
 ## License
 
-Proprietary / project-local unless otherwise specified.
+별도 명시가 없으면 Proprietary / project-local입니다.
