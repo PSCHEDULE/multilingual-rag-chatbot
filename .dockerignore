@@ -28,3 +28,26 @@ tests
 .vscode
 .idea
 .DS_Store
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*~
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Local snapshots and Python build outputs
+snapshots/
+dist/
+build/
+*.egg-info/

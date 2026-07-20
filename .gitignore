@@ -54,3 +54,20 @@ models/
 
 # Local snapshots / temp
 snapshots/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*~
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
