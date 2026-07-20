@@ -4,7 +4,7 @@ Practical operational runbook for deploying retrieval to the BGE-M3 collection i
 **staging**. Design goals: safe soft cutover, reversible hash rollback, and
 verifiable readiness before production planning.
 
-**Rollback target:** collection `onlybook_faq` (hash dense dim **384**).  
+**Rollback target:** collection `onlybook_faq` (hash dense dim **384**).
 Do not delete or recreate it while it remains the active rollback collection.
 Retain it until production BGE stabilization is complete and the agreed
 rollback-retention period has expired.
@@ -204,10 +204,10 @@ done
 
 Confirm:
 
-- All responses are HTTP **200** in a healthy BGE deployment  
-- Latency stays stable (no multi-second spikes every probe)  
-- Logs do **not** show repeated BGE model loads  
-- Process/container memory does **not** grow continuously  
+- All responses are HTTP **200** in a healthy BGE deployment
+- Latency stays stable (no multi-second spikes every probe)
+- Logs do **not** show repeated BGE model loads
+- Process/container memory does **not** grow continuously
 
 The shell loop alone does **not** prove memory stability — pair it with
 process/container metrics (RSS, cgroup memory) and application logs.
@@ -261,9 +261,9 @@ GET /ready (lightweight):
 
 **Not checked automatically today (manual preflight / future):**
 
-- Reranker loaded  
-- Sparse-vector configuration details  
-- Payload field indexes (`language`, `faq_id`, `title`)  
+- Reranker loaded
+- Sparse-vector configuration details
+- Payload field indexes (`language`, `faq_id`, `title`)
 
 ---
 
@@ -347,10 +347,10 @@ Route expectations for edge cases are evaluated **separately** from the fixed
 FAQ matrix (do not require `simple_retrieve` for these unless observed):
 
 1. **Compound / multi-aspect question** where a valid secondary document may
-   survive pruning as Top-2 (score above absolute and relative thresholds).  
+   survive pruning as Top-2 (score above absolute and relative thresholds).
    Confirm sources still ≤ 3 and Top-1 remains the primary FAQ.
 
-2. **Unrelated / out-of-knowledge question**  
+2. **Unrelated / out-of-knowledge question**
    Confirm the system does not invent unsupported definitive policy; empty or
    low-confidence retrieval should not produce fabricated operational claims.
 
@@ -456,13 +456,13 @@ Expected regex:
 ^faq-(en|ko|ja|zh)-Q\d+$
 ```
 
-Examples: `faq-en-Q18`, `faq-ko-Q18`, `faq-ja-Q15`, `faq-zh-Q1`.  
+Examples: `faq-en-Q18`, `faq-ko-Q18`, `faq-ja-Q15`, `faq-zh-Q1`.
 No zero-padding requirement beyond what the stored `faq_id` already contains.
 
 **Fallback** when `faq_id` is missing: filename stem only (e.g. `Q15_faq_15_ja`),
 still without directory paths.
 
-Titles prefer FAQ **question** text (display-title resolution).  
+Titles prefer FAQ **question** text (display-title resolution).
 Client payloads must not expose paths such as `data/onlybook_faq/...`.
 
 ---
@@ -470,24 +470,24 @@ Client payloads must not expose paths such as `data/onlybook_faq/...`.
 ## 10. Recommended staging cutover order
 
 1. **Manual Qdrant preflight (§1)** for `onlybook_faq_bge_m3_v1` (dim **1024**,
-   sparse config, sample payload fields) and rollback `onlybook_faq` (dim **384**).  
-2. Install deps: `uv sync --group bge` (or image build).  
+   sparse config, sample payload fields) and rollback `onlybook_faq` (dim **384**).
+2. Install deps: `uv sync --group bge` (or image build).
 3. Set BGE env: `QDRANT_COLLECTION=onlybook_faq_bge_m3_v1`, `PREFER_BGE=true`,
-   `RETRIEVAL_LANGUAGE_FILTER=true`.  
-4. Deploy / restart the API.  
+   `RETRIEVAL_LANGUAGE_FILTER=true`.
+4. Deploy / restart the API.
 5. Verify `GET /health` 200 and `GET /ready` 200 (`ready: true`, dim **1024**)
-   and startup log `ok_bge_mode`. Run the repeated-readiness loop in §4.  
+   and startup log `ok_bge_mode`. Run the repeated-readiness loop in §4.
 6. Run multilingual smoke (EN/KO/JA/ZH) with **message + session_id only**;
-   apply the pass criteria in §5 (`route=simple_retrieve` for the fixed matrix).  
-7. **Rollback drill (required before production planning):**  
-   a. Switch to hash: `QDRANT_COLLECTION=onlybook_faq`, `PREFER_BGE=false`, restart.  
-   b. Verify `/ready` 200, dim **384**, log `ok_hash_mode`.  
-   c. Smoke ≥1 EN and preferably 1 CJK query; non-empty sources.  
-   d. Restore BGE: `QDRANT_COLLECTION=onlybook_faq_bge_m3_v1`, `PREFER_BGE=true`, restart.  
-   e. Verify `/ready` 200, dim **1024**, log `ok_bge_mode`.  
-   f. Re-run a short BGE smoke (e.g. EN + KO refund).  
-8. **Soak** under the criteria in §10.1 (leave staging on BGE after a successful drill).  
-9. Record the rollback card (§11) and that the round-trip drill passed.  
+   apply the pass criteria in §5 (`route=simple_retrieve` for the fixed matrix).
+7. **Rollback drill (required before production planning):**
+   a. Switch to hash: `QDRANT_COLLECTION=onlybook_faq`, `PREFER_BGE=false`, restart.
+   b. Verify `/ready` 200, dim **384**, log `ok_hash_mode`.
+   c. Smoke ≥1 EN and preferably 1 CJK query; non-empty sources.
+   d. Restore BGE: `QDRANT_COLLECTION=onlybook_faq_bge_m3_v1`, `PREFER_BGE=true`, restart.
+   e. Verify `/ready` 200, dim **1024**, log `ok_bge_mode`.
+   f. Re-run a short BGE smoke (e.g. EN + KO refund).
+8. **Soak** under the criteria in §10.1 (leave staging on BGE after a successful drill).
+9. Record the rollback card (§11) and that the round-trip drill passed.
 10. **Only after a successful BGE → Hash → BGE round-trip and soak**, proceed to
     production cutover planning with the same checklist.
 
@@ -509,11 +509,75 @@ exception with separate tests):
 If the environment cannot meet **both** time and volume in one window, run and
 record **separate** required tests:
 
-- **Time-based soak** — memory stability and unexpected model reloads  
-- **Volume-based test** — latency, errors, and retrieval quality  
+- **Time-based soak** — memory stability and unexpected model reloads
+- **Volume-based test** — latency, errors, and retrieval quality
 
 Exact thresholds may be adjusted for staging but must be **agreed and recorded**
 before staging sign-off.
+
+### 10.2 Staging validation record — 2026-07-20
+
+**Decision: PASS.** Staging BGE cutover validation is complete. Production
+cutover **planning may begin**. This is **not** production cutover approval or
+production readiness.
+
+| Check | Result |
+|-------|--------|
+| Multilingual fixed smoke (EN/KO/JA/ZH) | PASS |
+| BGE dense lifecycle reuse | PASS |
+| Reranker lifecycle reuse | PASS |
+| BGE → Hash → BGE rollback round-trip drill | PASS |
+| 30-minute / 100-request soak | PASS |
+
+**Authoritative soak metrics (formal detailed F2E report):**
+
+| Metric | Value |
+|--------|--------|
+| Date | 2026-07-20 |
+| Decision | PASS |
+| Requests | **100** (EN=25, KO=25, JA=25, ZH=25) |
+| Retries | **0** |
+| Observation duration | **1967.7 s** (includes **120 s** cooldown) |
+| Overall P50 total latency | **8.32 s** |
+| Overall P95 total latency | **10.90 s** |
+| Overall maximum total latency | **12.51 s** |
+| Agreed P95 gate | **≤ 20.0 s** |
+| HTTP / non-200 failures | **0** |
+| SSE errors | **0** |
+| Empty-source failures | **0** |
+| Fixed-FAQ Top-1 failures | **0** |
+| API restarts | **0** |
+| Qdrant restarts | **0** |
+| API OOM | **false** |
+| Qdrant OOM | **false** |
+| Dense BGE loads | **1 → 1** |
+| Reranker loads | **1 → 1** |
+| Application startup completions | **1 → 1** |
+| Qdrant collections | Unchanged |
+| Docker volumes | Unchanged |
+
+**Model lifecycle:** No unexpected dense BGE or reranker reload under soak;
+startup completions remain 1.
+
+**Runtime / Qdrant / volume integrity:** API and Qdrant stayed healthy with zero
+restarts and no OOM; collection point counts, dimensions, and volume metadata
+unchanged.
+
+**Final staging mode (leave staging on BGE):**
+
+```text
+QDRANT_COLLECTION=onlybook_faq_bge_m3_v1
+PREFER_BGE=true
+```
+
+**Evidence caveat:** Temporary raw soak JSON/JSONL artifacts were deleted during
+planned cleanup, so exact raw-data recomputation is no longer possible. Two
+textual summaries contained different aggregate latency values. The **formal
+detailed F2E report** is the authoritative record. Do not state or imply that
+those summaries came from separate runs; that cannot be verified.
+
+§5 smoke criteria, §7 rollback procedure, and §10.1 soak gates remain the
+reusable operational procedures for future drills.
 
 ---
 

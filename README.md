@@ -13,7 +13,7 @@ Production-oriented RAG chatbot with first-class support for **Korean, English, 
 | Observability | Langfuse (optional; no-op without keys) |
 | Deps | **uv** + `pyproject.toml` (Python 3.12); optional **`bge`** group for BGE-M3 |
 
-**Status (2026-07-16):** M0–M7 complete; **M8-A** FAQ atomic chunking and **M8-B** BGE-M3 technical path complete; **staging BGE cutover** in progress.  
+**Status (2026-07-20):** M0–M7 complete; **M8-A** FAQ atomic chunking and **M8-B** BGE-M3 technical implementation complete; **staging BGE cutover validation** complete. Production cutover planning and **M9** packaging are next.
 See [MILESTONES.md](MILESTONES.md) · [SPEC.md](SPEC.md) · [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md).
 
 ## Architecture
@@ -127,9 +127,9 @@ Reports always include overall metrics and **`by_language`** breakdown.
 
 ## Docs
 
-- [docs/chunking.md](docs/chunking.md) — CJK semantic chunking + manual review  
-- [docs/retrieval.md](docs/retrieval.md) — hybrid + reranker latency/cost  
-- [docs/sse-contract.md](docs/sse-contract.md) — frozen widget SSE events  
+- [docs/chunking.md](docs/chunking.md) — CJK semantic chunking + manual review
+- [docs/retrieval.md](docs/retrieval.md) — hybrid + reranker latency/cost
+- [docs/sse-contract.md](docs/sse-contract.md) — frozen widget SSE events
 
 ## Development
 
@@ -153,10 +153,10 @@ curl -sf http://localhost:8000/health
 
 ## Extending languages
 
-1. Add detector aliases in `app/utils/language.py`  
-2. Add sample docs under `data/sample_docs/<lang>/`  
-3. Add parallel eval rows in `app/eval/dataset/`  
-4. Optional: language-specific tokenizer plug-in in chunking fallback  
+1. Add detector aliases in `app/utils/language.py`
+2. Add sample docs under `data/sample_docs/<lang>/`
+3. Add parallel eval rows in `app/eval/dataset/`
+4. Optional: language-specific tokenizer plug-in in chunking fallback
 
 ## Privacy
 
