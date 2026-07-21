@@ -42,8 +42,9 @@ Living status for the multilingual RAG customer-support chatbot
 ## 1. M7 (evaluation) — complete
 
 - Cross-lingual eval set and stable RAGAS-style runner in place.
-- Live OnlyBook 120-row run: pipeline stable; **faithfulness** useful as a signal;
-  **answer_relevancy** kept as diagnostic only.
+- Live OnlyBook 120-row run: pipeline stable; **faithfulness** is the default hard
+  release gate; **answer_relevancy** is diagnostic by default (optional
+  `--gate-answer-relevancy` hard gate).
 - Weak retrieval drivers identified: FAQ Q/A split under generic chunking + weak
   hash dense embeddings → led to M8-A / M8-B split.
 

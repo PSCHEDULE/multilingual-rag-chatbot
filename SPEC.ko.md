@@ -4,25 +4,25 @@
 >
 > 기준 영문 문서: [SPEC.md](SPEC.md)
 > 번역 기준 리포지토리 커밋:
-> `b6ecd66d9b07d95c2d2fafabab30c5ab58947a46`
-> 동기화 날짜: 2026-07-20
+> `d0ef3f025f7f6a940c224f5de5759bdaed2f1def` (M9 packaging baseline; follow-up docs sync)
+> 동기화 날짜: 2026-07-21
 >
 > 영문 문서와 내용이 충돌할 경우 영문 문서를 우선합니다.
 
 [English](SPEC.md) | 한국어
 
-**Date:** 2026-07-20
-**Status:** M0–M8 technical implementation complete; **M8-B staging BGE validation PASS**; production cutover **planning may begin**; production deployment is **not** approved or complete; **M9** production packaging is **not started**
+**Date:** 2026-07-21
+**Status:** **M0–M9 리포지토리 구현 완료**; **M8-B staging BGE validation PASS**; **M9 리포지토리 프로덕션 패키징 완료** 및 로컬 검증됨; **실제 프로덕션 배포는 수행되지 않음**; **프로덕션 트래픽 컷오버는 승인되지 않음**; 플랫폼 의사결정 필요
 
 **Language Support:** Korean, English, Japanese, Chinese (extensible)
 
-**Living status:** [MILESTONES.md](MILESTONES.md) · **Ops validation:** [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md)
+**Living status:** [MILESTONES.md](MILESTONES.md) · **Ops validation:** [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md) · **Production packaging:** [docs/production-deployment.md](docs/production-deployment.md)
 
 ## 1. Project Overview
 
 **Target:** 기존 웹사이트에 임베드할 수 있는 production-ready RAG 기반 고객 지원 챗봇으로, 고품질 다국어 응답, 낮은 지연, 강한 관측성을 목표로 합니다.
 
-**Current state (2026-07-20):** M8-B 기술 경로는 완료되었고 **M8-B staging BGE validation has passed**. Production packaging (**M9**)와 **production deployment approval**은 향후 작업입니다. 상세 마일스톤 상태는 `MILESTONES.md`에, 운영 절차 및 검증 증거는 `docs/staging-cutover-bge.md`에 있습니다.
+**Current state (2026-07-21):** M0–M9 리포지토리 작업이 완료되었습니다. **M8-B staging BGE validation PASS**와 **M9 프로덕션 패키징**(템플릿, Compose override, 시작 정책, 런북, 로컬 검증)을 포함합니다. **실제 프로덕션 배포는 수행되지 않았고** **프로덕션 트래픽 컷오버는 승인되지 않았습니다**. TLS/ingress, 시크릿, 레지스트리, HA, 공식 트래픽 전환 등 플랫폼 의사결정이 여전히 필요합니다. 상세 마일스톤 상태는 `MILESTONES.md`를 참고하세요.
 
 주요 목표:
 - 한국어, 영어, 일본어, 중국어에서 우수한 성능
@@ -126,7 +126,8 @@ Additional requirements:
 
 - Automated RAGAS-style evaluation 구현.
 - 교차 언어 test sets 유지 (4개 언어 병렬 쿼리).
-- Faithfulness는 주요 품질 신호로 유지하며, 다국어 metric 노이즈가 큰 경우 `answer_relevancy`는 하드 게이트가 아닌 진단 전용 지표로 유지할 수 있습니다.
+- **Faithfulness**는 기본 **하드 릴리스 게이트**입니다.
+- **Answer relevancy**는 기본 **진단 전용**입니다(항상 보고; 러너 실패 조건 아님). 명시적 옵션(예: `--gate-answer-relevancy`)으로만 하드 게이트가 될 수 있습니다.
 - 모든 major milestone은 runnable Gate Verification commands와 PASS criteria를 포함해야 함.
 
 **Staging validation gates** (절차와 증거는 `docs/staging-cutover-bge.md`):
@@ -168,8 +169,8 @@ Statuses:
 | RAGAS evaluation scripts with cross-lingual test sets | COMPLETE |
 | Optional Langfuse integration | PARTIAL |
 | Staging BGE Docker/image path and staging validation | COMPLETE (staging) |
-| Production packaging and production-ready deployment topology | PLANNED (M9) |
-| Production cutover approval / deployment | PLANNED |
+| Production packaging (repository templates, Compose, startup policy, runbook) | COMPLETE (M9; 컷오버 승인 아님) |
+| Production cutover approval / deployment | PLANNED (미승인) |
 | Comprehensive website integration documentation | PARTIAL |
 
 ---

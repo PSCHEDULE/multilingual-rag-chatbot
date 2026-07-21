@@ -4,8 +4,8 @@
 >
 > 기준 영문 문서: [README.md](README.md)
 > 번역 기준 리포지토리 커밋:
-> `b6ecd66d9b07d95c2d2fafabab30c5ab58947a46`
-> 동기화 날짜: 2026-07-20
+> `d0ef3f025f7f6a940c224f5de5759bdaed2f1def` (M9 packaging baseline; follow-up docs sync)
+> 동기화 날짜: 2026-07-21
 >
 > 영문 문서와 내용이 충돌할 경우 영문 문서를 우선합니다.
 
@@ -24,8 +24,8 @@
 | Observability | Langfuse (optional; no-op without keys) |
 | Deps | **uv** + `pyproject.toml` (Python 3.12); optional **`bge`** group for BGE-M3 |
 
-**상태 (2026-07-20):** M0–M7 complete; **M8-A** FAQ atomic chunking 및 **M8-B** BGE-M3 기술 구현 complete; **staging BGE cutover validation** complete. Production cutover planning 및 **M9** packaging이 다음 단계입니다.
-See [MILESTONES.md](MILESTONES.md) · [SPEC.ko.md](SPEC.ko.md) · [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md).
+**상태 (2026-07-21):** **M0–M9 리포지토리 구현 완료.** M8-B staging BGE validation **PASS**; M9 프로덕션 패키징 완료 및 로컬 검증됨. **실제 프로덕션 배포는 수행되지 않았고**, **프로덕션 트래픽 컷오버는 승인되지 않음**; 플랫폼 의사결정이 여전히 필요합니다.
+See [MILESTONES.md](MILESTONES.md) · [SPEC.ko.md](SPEC.ko.md) · [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md) · [docs/production-deployment.md](docs/production-deployment.md).
 
 ## Architecture
 
@@ -115,10 +115,12 @@ proxy_read_timeout 3600;
 
 교차 언어 데이터셋: `app/eval/dataset/cross_lingual_v1.jsonl` (≥3 intents × 4 languages).
 
-| Tier | Faithfulness | Answer relevancy |
-|------|--------------|------------------|
-| **Initial** | ≥ 0.78 | ≥ 0.75 |
-| **Release** | ≥ 0.82 | ≥ 0.78 |
+| Metric | 기본 역할 | Initial | Release |
+|--------|-----------|---------|---------|
+| **Faithfulness** | **하드 릴리스 게이트** | ≥ 0.78 | ≥ 0.82 |
+| **Answer relevancy** | **진단 전용** (보고됨; 기본 실패 조건 아님) | ≥ 0.75 (참고) | ≥ 0.78 (참고) |
+
+Answer relevancy를 하드 게이트로 쓰려면 `--gate-answer-relevancy`를 명시합니다.
 
 ```bash
 # Wiring / mock gate
@@ -127,11 +129,15 @@ uv run python -m app.eval.run_ragas \
   --mock --output artifacts/eval/report_mock.json
 
 # Initial live gate (needs models + optional Qdrant)
+# 기본: faithfulness만 하드 게이트; answer_relevancy는 진단 전용
 uv run python -m app.eval.run_ragas \
   --dataset app/eval/dataset/cross_lingual_v1.jsonl \
   --tier initial \
   --fail-under faithfulness=0.78,answer_relevancy=0.75 \
   --output artifacts/eval/report_initial.json
+
+# 선택: answer_relevancy도 하드 게이트
+#   ... --gate-answer-relevancy
 ```
 
 리포트에는 항상 전체 지표와 **`by_language`** 분해가 포함됩니다.

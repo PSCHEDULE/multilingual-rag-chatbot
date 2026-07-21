@@ -2,12 +2,12 @@
 
 English | [한국어](SPEC.ko.md)
 
-**Date:** 2026-07-20
-**Status:** M0–M8 technical implementation complete; **M8-B staging BGE validation PASS**; production cutover **planning may begin**; production deployment is **not** approved or complete; **M9** production packaging is **not started**
+**Date:** 2026-07-21
+**Status:** **M0–M9 repository implementation complete**; **M8-B staging BGE validation PASS**; **M9 repository production packaging complete** and locally validated; **actual production deployment has not been performed**; **production traffic cutover is not approved**; platform decisions remain required
 
 **Language Support:** Korean, English, Japanese, Chinese (extensible)
 
-**Living status:** [MILESTONES.md](MILESTONES.md) · **Ops validation:** [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md)
+**Living status:** [MILESTONES.md](MILESTONES.md) · **Ops validation:** [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md) · **Production packaging:** [docs/production-deployment.md](docs/production-deployment.md)
 
 ## 1. Project Overview
 
@@ -15,11 +15,12 @@ English | [한국어](SPEC.ko.md)
 embedded into an existing website, with high-quality multilingual answers, low
 latency, and strong observability.
 
-**Current state (2026-07-20):** the M8-B technical path is complete and **M8-B
-staging BGE validation has passed**. Production packaging (**M9**) and
-**production deployment approval** remain future work. Detailed milestone status
-lives in `MILESTONES.md`; operational procedures and validation evidence live in
-`docs/staging-cutover-bge.md`.
+**Current state (2026-07-21):** M0–M9 repository work is complete, including
+**M8-B staging BGE validation PASS** and **M9 production packaging** (templates,
+Compose override, startup policy, runbook, local validation). **Actual production
+deployment has not been performed** and **production traffic cutover is not
+approved**. Platform decisions (TLS/ingress, secrets, registry, HA, formal traffic
+switch) remain required. Detailed milestone status lives in `MILESTONES.md`.
 
 Key objectives:
 - Excellent performance across Korean, English, Japanese, and Chinese
@@ -152,8 +153,10 @@ Additional requirements:
 
 - Implement automated RAGAS-style evaluation.
 - Maintain cross-lingual test sets (parallel queries across four languages).
-- Faithfulness remains a useful quality signal; **answer relevancy is diagnostic
-  only**, not a hard release gate when multilingual metric noise is high.
+- **Faithfulness** is the default **hard release gate**.
+- **Answer relevancy** is **diagnostic only** by default (always reported; does
+  not fail the runner). It may become a hard gate only via an explicit option
+  (e.g. `--gate-answer-relevancy`).
 - Every major milestone must include runnable Gate Verification commands and PASS
   criteria.
 
@@ -202,8 +205,8 @@ Statuses:
 | RAGAS evaluation scripts with cross-lingual test sets | COMPLETE |
 | Optional Langfuse integration | PARTIAL |
 | Staging BGE Docker/image path and staging validation | COMPLETE (staging) |
-| Production packaging and production-ready deployment topology | PLANNED (M9) |
-| Production cutover approval / deployment | PLANNED |
+| Production packaging (repository templates, Compose, startup policy, runbook) | COMPLETE (M9; not cutover approval) |
+| Production cutover approval / deployment | PLANNED (not approved) |
 | Comprehensive website integration documentation | PARTIAL |
 
 ---

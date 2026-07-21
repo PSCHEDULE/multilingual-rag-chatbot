@@ -15,8 +15,8 @@ Production-oriented RAG chatbot with first-class support for **Korean, English, 
 | Observability | Langfuse (optional; no-op without keys) |
 | Deps | **uv** + `pyproject.toml` (Python 3.12); optional **`bge`** group for BGE-M3 |
 
-**Status (2026-07-20):** M0–M7 complete; **M8-A** FAQ atomic chunking and **M8-B** BGE-M3 technical implementation complete; **staging BGE cutover validation** complete. Production cutover planning and **M9** packaging are next.
-See [MILESTONES.md](MILESTONES.md) · [SPEC.md](SPEC.md) · [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md).
+**Status (2026-07-21):** **M0–M9 repository implementation complete.** M8-B staging BGE validation **PASS**; M9 production packaging complete and locally validated. **Actual production deployment has not been performed** and **production traffic cutover is not approved**; platform decisions remain required.
+See [MILESTONES.md](MILESTONES.md) · [SPEC.md](SPEC.md) · [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md) · [docs/production-deployment.md](docs/production-deployment.md).
 
 ## Architecture
 
@@ -106,10 +106,12 @@ proxy_read_timeout 3600;
 
 Cross-lingual set: `app/eval/dataset/cross_lingual_v1.jsonl` (≥3 intents × 4 languages).
 
-| Tier | Faithfulness | Answer relevancy |
-|------|--------------|------------------|
-| **Initial** | ≥ 0.78 | ≥ 0.75 |
-| **Release** | ≥ 0.82 | ≥ 0.78 |
+| Metric | Default role | Initial | Release |
+|--------|--------------|---------|---------|
+| **Faithfulness** | **Hard release gate** | ≥ 0.78 | ≥ 0.82 |
+| **Answer relevancy** | **Diagnostic only** (reported; does not fail the run) | ≥ 0.75 (reference) | ≥ 0.78 (reference) |
+
+Optional hard gate for answer relevancy: pass `--gate-answer-relevancy`.
 
 ```bash
 # Wiring / mock gate
@@ -118,11 +120,15 @@ uv run python -m app.eval.run_ragas \
   --mock --output artifacts/eval/report_mock.json
 
 # Initial live gate (needs models + optional Qdrant)
+# Default: faithfulness is hard; answer_relevancy is diagnostic-only
 uv run python -m app.eval.run_ragas \
   --dataset app/eval/dataset/cross_lingual_v1.jsonl \
   --tier initial \
   --fail-under faithfulness=0.78,answer_relevancy=0.75 \
   --output artifacts/eval/report_initial.json
+
+# Optional: also hard-gate answer_relevancy
+#   ... --gate-answer-relevancy
 ```
 
 Reports always include overall metrics and **`by_language`** breakdown.
