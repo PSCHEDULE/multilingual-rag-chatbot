@@ -62,7 +62,12 @@ class BGEEmbedder(DenseEmbedder):
         logger.info("Loading SentenceTransformer model %s", model_name)
         self._model = SentenceTransformer(model_name)
         # Measure at load time — do not hardcode dim (BGE-M3 is typically 1024).
-        self.dim = int(self._model.get_sentence_embedding_dimension())
+        measured = self._model.get_sentence_embedding_dimension()
+        if measured is None:
+            raise RuntimeError(
+                f"SentenceTransformer {model_name!r} did not report an embedding dimension"
+            )
+        self.dim = int(measured)
         logger.info("Loaded dense embedder %s dim=%s", model_name, self.dim)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:

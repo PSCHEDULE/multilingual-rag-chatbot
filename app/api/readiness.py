@@ -36,11 +36,11 @@ def _validate_embedder_once(cfg: Settings) -> dict[str, Any]:
     instance. Does not call ``cache_clear`` on the hot path of /ready either.
     """
     if not cfg.prefer_bge:
-        emb = OfflineHashEmbedder()
+        hash_emb = OfflineHashEmbedder()
         return {
             "ok": True,
-            "type": type(emb).__name__,
-            "dim": emb.dim,
+            "type": type(hash_emb).__name__,
+            "dim": hash_emb.dim,
             "expected_dim": EXPECTED_HASH_DIM,
         }
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from app.config import Settings, get_settings
 from app.ingestion.chunking import DocumentChunk
@@ -221,7 +221,10 @@ def hybrid_search(
         dense_q = OfflineHashEmbedder().embed_query(query)
     sparse_q = sparse_bm25_vector(query)
 
-    must = []
+    # FieldCondition is a valid Filter.must member. qdrant-client stubs type
+    # ``must`` as a broad condition union; list is invariant, so cast at the
+    # third-party boundary only (runtime value is list[FieldCondition]).
+    must: list[rest.FieldCondition] = []
     if language:
         must.append(
             rest.FieldCondition(key="language", match=rest.MatchValue(value=language))
@@ -232,7 +235,7 @@ def hybrid_search(
         )
     if source:
         must.append(rest.FieldCondition(key="source", match=rest.MatchValue(value=source)))
-    query_filter = rest.Filter(must=must) if must else None
+    query_filter = rest.Filter(must=cast(Any, must)) if must else None
 
     client = get_qdrant_client(cfg)
     # Prefer query_points API (qdrant-client >= 1.12)

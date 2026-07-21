@@ -88,16 +88,18 @@ def entries_to_chunks(
         for part_i, ans_part in enumerate(answer_parts):
             # Always include full question with every answer part
             text = format_faq_text(entry.question, ans_part)
-            fm = {}
+            fm: dict[str, Any] = {}
             if isinstance(entry.raw_meta, dict):
-                fm = entry.raw_meta.get("front_matter") or {}
+                raw_fm = entry.raw_meta.get("front_matter") or {}
+                if isinstance(raw_fm, dict):
+                    fm = raw_fm
             display_title = resolve_display_title(
                 {
                     "question": entry.question,
                     "title": title,
                     "category": entry.category,
                     "source": source,
-                    "front_matter_title": (fm.get("title") if isinstance(fm, dict) else None),
+                    "front_matter_title": fm.get("title"),
                 },
                 text=text,
             )

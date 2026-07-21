@@ -107,7 +107,12 @@ class OpenAICompatibleClient:
             stream=True,
         )
         for chunk in stream:
-            delta = chunk.choices[0].delta.content if chunk.choices else None
+            # Streaming iterators may yield non-chunk control items; only process
+            # objects that expose the OpenAI chat chunk shape.
+            choices = getattr(chunk, "choices", None)
+            if not choices:
+                continue
+            delta = choices[0].delta.content
             if delta:
                 yield delta
 

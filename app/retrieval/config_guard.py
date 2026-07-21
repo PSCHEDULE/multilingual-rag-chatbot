@@ -63,7 +63,10 @@ def collection_dense_dim(client: Any, collection: str) -> int | None:
     vectors = info.config.params.vectors
     if isinstance(vectors, dict):
         v = vectors.get(DENSE_NAME) or next(iter(vectors.values()), None)
-        return int(getattr(v, "size", None)) if v is not None else None
+        if v is None:
+            return None
+        size = getattr(v, "size", None)
+        return int(size) if size is not None else None
     size = getattr(vectors, "size", None)
     return int(size) if size is not None else None
 

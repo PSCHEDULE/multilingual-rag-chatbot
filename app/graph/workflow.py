@@ -79,18 +79,19 @@ def run_turn(
 
 
 def _run_turn_with_llm(state: dict[str, Any], *, llm: Any) -> GraphState:
-    state = nodes.analyze_query(state, llm=llm)  # type: ignore[arg-type]
-    route = route_from_analysis(state)  # type: ignore[arg-type]
-    state["route"] = route
+    current: GraphState = dict(state)  # type: ignore[assignment]
+    current = nodes.analyze_query(current, llm=llm)
+    route = route_from_analysis(current)
+    current["route"] = route
     if route == "clarify":
-        return nodes.clarify(state)  # type: ignore[arg-type, return-value]
+        return nodes.clarify(current)
     if route == "out_of_scope":
-        return nodes.out_of_scope(state)  # type: ignore[arg-type, return-value]
+        return nodes.out_of_scope(current)
     if route == "multi_hop_retrieve":
-        state = nodes.multi_hop_retrieve(state)  # type: ignore[arg-type]
+        current = nodes.multi_hop_retrieve(current)
     else:
-        state = nodes.simple_retrieve(state)  # type: ignore[arg-type]
-    return nodes.generate_answer(state, llm=llm)  # type: ignore[arg-type, return-value]
+        current = nodes.simple_retrieve(current)
+    return nodes.generate_answer(current, llm=llm)
 
 
 def stream_tokens(state: dict[str, Any], *, llm: Any | None = None):

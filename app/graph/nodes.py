@@ -260,8 +260,6 @@ def generate_answer(state: GraphState, *, llm: Any | None = None) -> GraphState:
 
     client = llm or get_llm_client()
     system = GENERATE_SYSTEM.format(language=lang)
-    # Expose system text for unit tests / safety checks
-    state_out = {**state, "_generate_system": system}
 
     user_prompt = f"""Conversation history:
 {history}
@@ -285,8 +283,12 @@ Do not append bracketed numbers like [1] or [2] as citations.
 
     messages = list(messages)
     messages.append({"role": "assistant", "content": answer})
-    state_out["answer"] = answer
-    state_out["messages"] = messages
+    # Build a typed GraphState update (extra keys are not part of the TypedDict).
+    state_out: GraphState = {
+        **state,
+        "answer": answer,
+        "messages": messages,
+    }
     return state_out
 
 
