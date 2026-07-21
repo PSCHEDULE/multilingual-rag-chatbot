@@ -207,11 +207,22 @@ def hybrid_search(
     language: str | None = None,
     category: str | None = None,
     source: str | None = None,
+    metadata_filters: dict[str, str] | None = None,
     prefer_bge: bool = False,
     settings: Settings | None = None,
 ) -> list[dict[str, Any]]:
-    """Hybrid dense + sparse search with optional metadata filters."""
+    """Hybrid dense + sparse search with optional exact-match metadata filters.
+
+    Filter fields are restricted to allowlisted payload keys
+    (``app.retrieval.metadata_filters.ALLOWED_METADATA_FILTER_KEYS``).
+    Callers must not inject arbitrary Qdrant query objects.
+    """
     from qdrant_client.http import models as rest
+
+    from app.retrieval.metadata_filters import (
+        ALLOWED_METADATA_FILTER_KEYS,
+        merge_language_and_metadata_filters,
+    )
 
     cfg = settings or get_settings()
     coll = collection or cfg.qdrant_collection
@@ -221,20 +232,36 @@ def hybrid_search(
         dense_q = OfflineHashEmbedder().embed_query(query)
     sparse_q = sparse_bm25_vector(query)
 
+    # Merge legacy kwargs into allowlisted exact-match map
+    base: dict[str, str] = {}
+    if language:
+        base["language"] = language
+    if category:
+        base["category"] = category
+    if source:
+        base["source"] = source
+    combined = merge_language_and_metadata_filters(
+        auto_language=base.get("language"),
+        metadata_filters={
+            **{k: v for k, v in base.items() if k != "language"},
+            **(metadata_filters or {}),
+        }
+        or None,
+    )
+
     # FieldCondition is a valid Filter.must member. qdrant-client stubs type
     # ``must`` as a broad condition union; list is invariant, so cast at the
     # third-party boundary only (runtime value is list[FieldCondition]).
     must: list[rest.FieldCondition] = []
-    if language:
-        must.append(
-            rest.FieldCondition(key="language", match=rest.MatchValue(value=language))
-        )
-    if category:
-        must.append(
-            rest.FieldCondition(key="category", match=rest.MatchValue(value=category))
-        )
-    if source:
-        must.append(rest.FieldCondition(key="source", match=rest.MatchValue(value=source)))
+    if combined:
+        for key, value in combined.items():
+            if key not in ALLOWED_METADATA_FILTER_KEYS:
+                # Defense in depth: never pass unknown keys into Qdrant filters
+                logger.warning("Ignoring non-allowlisted filter key %r", key)
+                continue
+            must.append(
+                rest.FieldCondition(key=key, match=rest.MatchValue(value=value))
+            )
     query_filter = rest.Filter(must=cast(Any, must)) if must else None
 
     client = get_qdrant_client(cfg)

@@ -43,6 +43,7 @@ def retrieve_and_rerank(
     language: str | None = None,
     category: str | None = None,
     source: str | None = None,
+    metadata_filters: dict[str, str] | None = None,
     top_n: int | None = None,
     top_k: int | None = None,
     collection: str | None = None,
@@ -54,15 +55,34 @@ def retrieve_and_rerank(
 
     When ``prefer_bge`` / ``collection`` are omitted, uses settings
     (``PREFER_BGE``, ``QDRANT_COLLECTION``). Logs collection and flags for cutover ops.
+
+    ``metadata_filters`` is an allowlisted exact-match payload map (see
+    ``app.retrieval.metadata_filters``). Convenience kwargs ``language`` /
+    ``category`` / ``source`` are merged in and overridden by keys already
+    present in ``metadata_filters``.
     """
     from app.retrieval.config_guard import validate_prefer_bge_collection_pair
+    from app.retrieval.metadata_filters import merge_language_and_metadata_filters
 
     cfg = settings or get_settings()
     n = top_n if top_n is not None else cfg.retrieval_top_n
     k = top_k if top_k is not None else cfg.retrieval_top_k
     use_bge = cfg.prefer_bge if prefer_bge is None else prefer_bge
     coll = collection if collection is not None else cfg.qdrant_collection
-    lang_filter = language  # caller decides; graph applies RETRIEVAL_LANGUAGE_FILTER
+
+    # Build combined payload filters: language/category/source kwargs + request map.
+    # Explicit metadata_filters win on key conflict (including language).
+    legacy: dict[str, str] = {}
+    if category:
+        legacy["category"] = category
+    if source:
+        legacy["source"] = source
+    if metadata_filters:
+        legacy.update(metadata_filters)
+    combined = merge_language_and_metadata_filters(
+        auto_language=language,
+        metadata_filters=legacy or None,
+    )
 
     try:
         validate_prefer_bge_collection_pair(collection=coll, prefer_bge=use_bge)
@@ -76,9 +96,7 @@ def retrieve_and_rerank(
             query,
             collection=coll,
             top_n=n,
-            language=lang_filter,
-            category=category,
-            source=source,
+            metadata_filters=combined,
             prefer_bge=use_bge,
             settings=cfg,
         )
@@ -97,11 +115,11 @@ def retrieve_and_rerank(
         top_k=k,
     )
     logger.info(
-        "retrieve_and_rerank collection=%s prefer_bge=%s language_filter=%s "
+        "retrieve_and_rerank collection=%s prefer_bge=%s payload_filters=%s "
         "query_len=%s hits=%s retrieval_ms=%.1f rerank_ms=%.1f total_ms=%.1f",
         coll,
         use_bge,
-        lang_filter,
+        combined,
         len(query),
         len(ranked),
         retrieval_ms,

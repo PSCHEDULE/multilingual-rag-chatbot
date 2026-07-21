@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Self
+from typing import Any, Self
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -121,9 +121,32 @@ class Settings(BaseSettings):
         return (self.app_env or "").strip().lower() in _PRODUCTION_ENVS
 
     def cors_origin_list(self) -> list[str]:
-        if self.cors_origins.strip() == "*":
+        """Parsed CORS origins. A sole ``*`` means reflect-any (credentials off)."""
+        raw = (self.cors_origins or "").strip()
+        if raw == "*":
             return ["*"]
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return [o.strip() for o in raw.split(",") if o.strip()]
+
+    def cors_allow_credentials(self) -> bool:
+        """
+        Browser-safe credentials flag for CORSMiddleware.
+
+        Credentials must never be enabled with a wildcard origin list.
+        Explicit non-wildcard origins may enable credentials.
+        """
+        origins = self.cors_origin_list()
+        if not origins or any(o == "*" for o in origins):
+            return False
+        return True
+
+    def cors_middleware_kwargs(self) -> dict[str, Any]:
+        """Keyword args for ``CORSMiddleware`` derived from settings."""
+        return {
+            "allow_origins": self.cors_origin_list(),
+            "allow_credentials": self.cors_allow_credentials(),
+            "allow_methods": ["*"],
+            "allow_headers": ["*"],
+        }
 
     def language_filter_value(self, language: str | None) -> str | None:
         """Return language for hybrid filter, or None when filter is disabled."""
@@ -140,6 +163,8 @@ class Settings(BaseSettings):
         Rules (APP_ENV in {prod, production}):
         - MOCK_LLM must not be enabled
         - selected secret-backed providers require OPENAI_API_KEY or LLM_API_KEY
+        - CORS_ORIGINS must be explicit (not wildcard) so credentials-safe origins
+          can be used without an invalid browser CORS combination
         """
         if not self.is_production():
             return self
@@ -153,6 +178,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "Production startup rejected: OPENAI_API_KEY or LLM_API_KEY is "
                 f"required when APP_ENV is production and LLM_PROVIDER={provider!r}"
+            )
+        origins = self.cors_origin_list()
+        if not origins or any(o == "*" for o in origins):
+            raise ValueError(
+                "Production startup rejected: CORS_ORIGINS must list explicit "
+                "origins (not *) when APP_ENV is production"
             )
         return self
 

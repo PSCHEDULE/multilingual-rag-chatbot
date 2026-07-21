@@ -39,3 +39,5 @@ class GraphState(TypedDict, total=False):
     needs_clarification: bool
     session_id: str
     language: str | None
+    # Allowlisted exact-match Qdrant payload filters from the chat request
+    metadata_filters: dict[str, str] | None

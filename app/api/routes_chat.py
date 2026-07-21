@@ -27,6 +27,8 @@ def _sse_events(req: ChatRequest) -> Iterator[dict]:
         "messages": history,
         "session_id": session_id,
         "language": req.language,
+        # Validated allowlisted exact-match payload filters (may be None)
+        "metadata_filters": req.metadata_filters,
     }
     answer_acc: list[str] = []
     try:

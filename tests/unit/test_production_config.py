@@ -19,6 +19,7 @@ def test_production_rejects_mock_llm_enabled(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("MOCK_LLM", "true")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-not-real")
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.example.com")
     with pytest.raises(ValidationError, match="MOCK_LLM must be false"):
         Settings(_env_file=None)
 
@@ -27,6 +28,7 @@ def test_prod_alias_rejects_mock_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "prod")
     monkeypatch.setenv("MOCK_LLM", "1")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-not-real")
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.example.com")
     with pytest.raises(ValidationError, match="MOCK_LLM must be false"):
         Settings(_env_file=None)
 
@@ -35,6 +37,7 @@ def test_production_requires_provider_secret(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("MOCK_LLM", "false")
     monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.example.com")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     with pytest.raises(ValidationError, match="OPENAI_API_KEY or LLM_API_KEY"):
@@ -48,6 +51,7 @@ def test_production_ok_with_mock_false_and_secret(
     monkeypatch.setenv("MOCK_LLM", "false")
     monkeypatch.setenv("LLM_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-not-real")
+    monkeypatch.setenv("CORS_ORIGINS", "https://app.example.com")
     cfg = Settings(_env_file=None)
     assert cfg.is_production() is True
     assert cfg.mock_llm is False

@@ -19,8 +19,8 @@
 |-------|----------|-------|
 | `message` | yes | User utterance |
 | `session_id` | no | Continuity; server generates if omitted |
-| `language` | no | Explicit `ko` / `en` / `ja` / `zh` |
-| `metadata_filters` | no | Reserved for retrieval filters |
+| `language` | no | Explicit `ko` / `en` / `ja` / `zh` (answer language / auto-detect override) |
+| `metadata_filters` | no | Optional **exact-match** Qdrant payload filters. Allowlisted keys only: `language`, `category`, `source`, `doc_type`, `faq_id`, `intent`. Values must be non-empty strings (max 128 chars). Unsupported keys → HTTP **422**. Explicit `metadata_filters.language` overrides the automatic retrieval language filter when both apply. |
 
 ## Events
 

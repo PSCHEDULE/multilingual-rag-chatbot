@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.retrieval.metadata_filters import (
+    ALLOWED_METADATA_FILTER_KEYS,
+    normalize_metadata_filters,
+)
 
 
 class HealthResponse(BaseModel):
@@ -45,7 +50,21 @@ class ChatRequest(BaseModel):
         default=None,
         description="Optional explicit language: ko|en|ja|zh",
     )
-    metadata_filters: dict[str, str] | None = None
+    metadata_filters: dict[str, str] | None = Field(
+        default=None,
+        description=(
+            "Optional exact-match payload filters. Allowed keys: "
+            + ", ".join(sorted(ALLOWED_METADATA_FILTER_KEYS))
+        ),
+    )
+
+    @field_validator("metadata_filters", mode="before")
+    @classmethod
+    def _validate_metadata_filters(cls, value: Any) -> dict[str, str] | None:
+        try:
+            return normalize_metadata_filters(value)
+        except ValueError as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class ChatSourceItem(BaseModel):

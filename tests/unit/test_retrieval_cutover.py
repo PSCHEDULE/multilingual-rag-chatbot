@@ -121,7 +121,7 @@ def test_simple_retrieve_passes_settings_to_retrieve(
     assert out["documents"]
     assert captured["prefer_bge"] is True
     assert captured["collection"] == "onlybook_faq_bge_m3_v1"
-    assert captured["language"] == "ko"
+    assert captured.get("metadata_filters") == {"language": "ko"}
     assert captured["query"] == "환불?"
 
 
@@ -155,7 +155,7 @@ def test_simple_retrieve_rollback_hash_path(
     )
     assert captured["prefer_bge"] is False
     assert captured["collection"] == "onlybook_faq"
-    assert captured["language"] is None  # filter disabled
+    assert captured.get("metadata_filters") is None  # language filter disabled
 
 
 def test_retrieve_and_rerank_logs_and_validates(

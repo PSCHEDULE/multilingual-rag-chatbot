@@ -140,15 +140,30 @@ def _retrieval_kwargs() -> dict[str, Any]:
     }
 
 
+def _payload_filters_for_state(state: GraphState) -> dict[str, str] | None:
+    """Merge auto language filter with request metadata_filters for hybrid search."""
+    from app.retrieval.metadata_filters import merge_language_and_metadata_filters
+
+    lang = state.get("language") or (state.get("analysis") or {}).get("language")
+    cfg = get_settings()
+    auto_lang = cfg.language_filter_value(lang if isinstance(lang, str) else None)
+    raw_mf = state.get("metadata_filters")
+    mf: dict[str, str] | None = None
+    if isinstance(raw_mf, dict):
+        mf = {str(k): str(v) for k, v in raw_mf.items() if v is not None}
+    return merge_language_and_metadata_filters(
+        auto_language=auto_lang,
+        metadata_filters=mf,
+    )
+
+
 def simple_retrieve(state: GraphState) -> GraphState:
     messages = list(state.get("messages") or [])
     query = _latest_user(messages)
-    lang = state.get("language") or (state.get("analysis") or {}).get("language")
     cfg = get_settings()
-    lang_filter = cfg.language_filter_value(lang if isinstance(lang, str) else None)
     result = retrieve_and_rerank(
         query,
-        language=lang_filter,
+        metadata_filters=_payload_filters_for_state(state),
         **_retrieval_kwargs(),
     )
     # Rerank still returns up to retrieval_top_k (default 6); prune before LLM/sources.
@@ -175,14 +190,17 @@ def multi_hop_retrieve(state: GraphState) -> GraphState:
     """Two-pass retrieval: full query + first sentence / clause."""
     messages = list(state.get("messages") or [])
     query = _latest_user(messages)
-    lang = state.get("language") or (state.get("analysis") or {}).get("language")
     cfg = get_settings()
-    lang_filter = cfg.language_filter_value(lang if isinstance(lang, str) else None)
     rk = _retrieval_kwargs()
-    r1 = retrieve_and_rerank(query, language=lang_filter, top_k=4, **rk)
+    payload_filters = _payload_filters_for_state(state)
+    r1 = retrieve_and_rerank(
+        query, metadata_filters=payload_filters, top_k=4, **rk
+    )
     # second hop: use first clause
     clause = re.split(r"[.。?？!！]", query)[0].strip() or query
-    r2 = retrieve_and_rerank(clause, language=lang_filter, top_k=4, **rk)
+    r2 = retrieve_and_rerank(
+        clause, metadata_filters=payload_filters, top_k=4, **rk
+    )
     merged: dict[str, dict[str, Any]] = {}
     for h in list(r1.hits) + list(r2.hits):
         key = h.text[:80]
