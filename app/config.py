@@ -1,9 +1,17 @@
 """Application settings loaded from environment variables."""
 
-from functools import lru_cache
+from __future__ import annotations
 
-from pydantic import Field
+from functools import lru_cache
+from typing import Self
+
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Production-like APP_ENV values that require hardened runtime policy.
+_PRODUCTION_ENVS = frozenset({"prod", "production"})
+# Providers that require a configured API key when mock is disabled in production.
+_SECRET_REQUIRED_PROVIDERS = frozenset({"openai", "xai", "grok"})
 
 
 class Settings(BaseSettings):
@@ -108,6 +116,10 @@ class Settings(BaseSettings):
         """Prefer OPENAI_API_KEY, then LLM_API_KEY."""
         return self.openai_api_key or self.llm_api_key
 
+    def is_production(self) -> bool:
+        """True when APP_ENV is a production deployment label."""
+        return (self.app_env or "").strip().lower() in _PRODUCTION_ENVS
+
     def cors_origin_list(self) -> list[str]:
         if self.cors_origins.strip() == "*":
             return ["*"]
@@ -120,6 +132,29 @@ class Settings(BaseSettings):
         if not language:
             return None
         return str(language).strip() or None
+
+    @model_validator(mode="after")
+    def enforce_production_runtime_policy(self) -> Self:
+        """Hard-reject unsafe production combinations at settings initialization.
+
+        Rules (APP_ENV in {prod, production}):
+        - MOCK_LLM must not be enabled
+        - selected secret-backed providers require OPENAI_API_KEY or LLM_API_KEY
+        """
+        if not self.is_production():
+            return self
+        if self.mock_llm:
+            raise ValueError(
+                "Production startup rejected: MOCK_LLM must be false when "
+                f"APP_ENV is production (got APP_ENV={self.app_env!r}, MOCK_LLM=true)"
+            )
+        provider = (self.llm_provider or "").strip().lower()
+        if provider in _SECRET_REQUIRED_PROVIDERS and not self.resolved_llm_api_key():
+            raise ValueError(
+                "Production startup rejected: OPENAI_API_KEY or LLM_API_KEY is "
+                f"required when APP_ENV is production and LLM_PROVIDER={provider!r}"
+            )
+        return self
 
 
 @lru_cache

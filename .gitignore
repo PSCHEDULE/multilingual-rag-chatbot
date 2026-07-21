@@ -33,6 +33,7 @@ artifacts/
 .env.*
 !.env.example
 !.env.staging.example
+!.env.production.example
 
 # Local tools and vector database state
 .tools/

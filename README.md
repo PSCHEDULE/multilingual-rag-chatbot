@@ -132,6 +132,8 @@ Reports always include overall metrics and **`by_language`** breakdown.
 - [docs/chunking.md](docs/chunking.md) — CJK semantic chunking + manual review
 - [docs/retrieval.md](docs/retrieval.md) — hybrid + reranker latency/cost
 - [docs/sse-contract.md](docs/sse-contract.md) — frozen widget SSE events
+- [docs/staging-cutover-bge.md](docs/staging-cutover-bge.md) — staging BGE cutover runbook
+- [docs/production-deployment.md](docs/production-deployment.md) — production packaging / rollback (not cutover approval)
 
 ## Development
 
@@ -153,6 +155,19 @@ docker compose up -d
 curl -sf http://localhost:8000/health
 ```
 
+### Production packaging (repository only — not cutover approval)
+
+- Template: `.env.production.example` (`APP_ENV=production`, `MOCK_LLM=false`)
+- Override: `docker-compose.production.yml` (external `APP_IMAGE`, restart, stop grace, healthcheck)
+- Runbook: [docs/production-deployment.md](docs/production-deployment.md)
+- Runtime hard rejection: production + `MOCK_LLM=true` fails at settings/startup; provider API key required for openai/xai/grok in production
+
+```bash
+docker compose --env-file .env.production.example \
+  -f docker-compose.yml -f docker-compose.production.yml config
+```
+
+**Actual production cutover is NOT approved.** Platform decisions (TLS, secrets, registry, HA) remain required.
 ## Extending languages
 
 1. Add detector aliases in `app/utils/language.py`

@@ -1,0 +1,58 @@
+# Production packaging override (repository-scoped).
+# Not a cloud platform definition and not production cutover approval.
+#
+# Requires a pre-built external image via APP_IMAGE (no local build in this file).
+#
+# Static validation (secret-free template):
+#   docker compose --env-file .env.production.example \
+#     -f docker-compose.yml -f docker-compose.production.yml config
+#
+# Runtime (private env file; never commit secrets):
+#   docker compose --env-file .env.production \
+#     -f docker-compose.yml -f docker-compose.production.yml up -d
+#
+# Do not commit real secrets.
+
+services:
+  api:
+    # External image only — platform/registry supplies the release artifact
+    image: ${APP_IMAGE:?APP_IMAGE is required}
+    build: !reset null
+    ports: !override
+      - "${PRODUCTION_API_PORT:?PRODUCTION_API_PORT is required}:8000"
+    # Replace base env so development defaults (e.g. MOCK_LLM:-true) do not merge in
+    environment: !override
+      APP_ENV: ${APP_ENV:?APP_ENV is required}
+      MOCK_LLM: ${MOCK_LLM:?MOCK_LLM is required}
+      QDRANT_URL: ${QDRANT_URL:?QDRANT_URL is required}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:?QDRANT_COLLECTION is required}
+      PREFER_BGE: ${PREFER_BGE:?PREFER_BGE is required}
+      RETRIEVAL_LANGUAGE_FILTER: ${RETRIEVAL_LANGUAGE_FILTER:?RETRIEVAL_LANGUAGE_FILTER is required}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:?EMBEDDING_MODEL is required}
+      LLM_PROVIDER: ${LLM_PROVIDER:?LLM_PROVIDER is required}
+      LLM_MODEL: ${LLM_MODEL:?LLM_MODEL is required}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # QDRANT_API_KEY intentionally omitted unless platform injects it
+    restart: unless-stopped
+    stop_grace_period: 30s
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 240s
+
+  qdrant:
+    restart: unless-stopped
+    stop_grace_period: 30s

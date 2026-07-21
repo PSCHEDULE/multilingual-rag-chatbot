@@ -21,8 +21,14 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: validate retrieval cutover config (hash rollback stays default-safe)."""
+    """Startup: production policy + retrieval cutover config (hash rollback stays default-safe)."""
     settings = get_settings()
+    # Production + mock / missing provider secret already rejected in Settings
+    # model_validator; re-assert at registered FastAPI lifespan for startup binding.
+    if settings.is_production() and settings.mock_llm:
+        raise RuntimeError(
+            "Production startup rejected: MOCK_LLM must be false when APP_ENV is production"
+        )
     from app.api.readiness import build_startup_readiness_snapshot
     from app.retrieval.config_guard import (
         RetrievalConfigError,
