@@ -30,9 +30,14 @@ if str(ROOT) not in sys.path:
 
 logger = logging.getLogger(__name__)
 
-# Threshold tiers from plan M7
+# Threshold tiers from plan M7 (values retained for reporting / optional hard gates)
 INITIAL = {"faithfulness": 0.78, "answer_relevancy": 0.75}
 RELEASE = {"faithfulness": 0.82, "answer_relevancy": 0.78}
+
+# Default hard release gates: faithfulness only.
+# answer_relevancy is diagnostic-only unless --gate-answer-relevancy is set.
+DEFAULT_HARD_GATE_METRICS = frozenset({"faithfulness"})
+OPTIONAL_HARD_GATE_METRICS = frozenset({"answer_relevancy"})
 
 # Default RunConfig for live RAGAS (correctness over speed)
 DEFAULT_TIMEOUT = 600
@@ -296,7 +301,14 @@ def _score_one_sample(
                 batch_size=1,
                 show_progress=False,
             )
-            df = result.to_pandas()
+            # ragas evaluate() stubs may return EvaluationResult | Executor;
+            # raise_exceptions=True with show_progress=False yields a result object.
+            to_pandas = getattr(result, "to_pandas", None)
+            if to_pandas is None:
+                raise TypeError(
+                    f"RAGAS evaluate() returned {type(result)!r} without to_pandas()"
+                )
+            df = to_pandas()
             f_raw = df["faithfulness"].iloc[0]
             r_raw = df["answer_relevancy"].iloc[0]
 
@@ -635,10 +647,39 @@ def parse_fail_under(s: str | None, tier: dict[str, float]) -> dict[str, float]:
     return thr
 
 
-def check_thresholds(report: dict[str, Any], thr: dict[str, float]) -> list[str]:
-    fails = []
+def active_hard_gates(
+    thr: dict[str, float],
+    *,
+    gate_answer_relevancy: bool = False,
+) -> dict[str, float]:
+    """Return the subset of thresholds that affect exit status / pass-fail.
+
+    By default only ``faithfulness`` is a hard gate. ``answer_relevancy`` is
+    included only when ``gate_answer_relevancy`` is True (CLI
+    ``--gate-answer-relevancy``).
+    """
+    hard_keys = set(DEFAULT_HARD_GATE_METRICS)
+    if gate_answer_relevancy:
+        hard_keys |= OPTIONAL_HARD_GATE_METRICS
+    return {k: v for k, v in thr.items() if k in hard_keys}
+
+
+def check_thresholds(
+    report: dict[str, Any],
+    thr: dict[str, float],
+    *,
+    gate_answer_relevancy: bool = False,
+) -> list[str]:
+    """Return hard-gate failures that should affect exit status.
+
+    Metrics always remain available in ``report['metrics']``. Threshold values
+    in ``thr`` may include diagnostic metrics; only active hard gates fail.
+    """
+    fails: list[str] = []
     metrics = report.get("metrics") or {}
-    for k, min_v in thr.items():
+    for k, min_v in active_hard_gates(
+        thr, gate_answer_relevancy=gate_answer_relevancy
+    ).items():
         got = metrics.get(k)
         if got is None:
             fails.append(f"{k}: no successful scores (all evaluation_error or empty)")
@@ -646,6 +687,28 @@ def check_thresholds(report: dict[str, Any], thr: dict[str, float]) -> list[str]
         if float(got) < min_v:
             fails.append(f"{k}: {float(got):.3f} < {min_v}")
     return fails
+
+
+def diagnostic_threshold_notes(
+    report: dict[str, Any],
+    thr: dict[str, float],
+    *,
+    gate_answer_relevancy: bool = False,
+) -> list[str]:
+    """Notes for non-hard metrics below threshold (do not affect exit status)."""
+    notes: list[str] = []
+    metrics = report.get("metrics") or {}
+    hard = set(active_hard_gates(thr, gate_answer_relevancy=gate_answer_relevancy))
+    for k, min_v in thr.items():
+        if k in hard:
+            continue
+        got = metrics.get(k)
+        if got is None:
+            notes.append(f"{k}: no successful scores (diagnostic)")
+            continue
+        if float(got) < min_v:
+            notes.append(f"{k}: {float(got):.3f} < {min_v} (diagnostic only)")
+    return notes
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -663,7 +726,18 @@ def main(argv: list[str] | None = None) -> int:
         "--fail-under",
         type=str,
         default=None,
-        help="e.g. faithfulness=0.78,answer_relevancy=0.75",
+        help=(
+            "Override metric thresholds, e.g. faithfulness=0.78,answer_relevancy=0.75. "
+            "answer_relevancy remains diagnostic unless --gate-answer-relevancy is set."
+        ),
+    )
+    p.add_argument(
+        "--gate-answer-relevancy",
+        action="store_true",
+        help=(
+            "Treat answer_relevancy as a hard release gate. "
+            "By default answer_relevancy is reported but diagnostic-only."
+        ),
     )
     p.add_argument(
         "--detail-json",
@@ -685,6 +759,8 @@ def main(argv: list[str] | None = None) -> int:
 
     tier = RELEASE if args.tier == "release" else INITIAL
     thr = parse_fail_under(args.fail_under, tier)
+    gate_ar = bool(args.gate_answer_relevancy)
+    hard_thr = active_hard_gates(thr, gate_answer_relevancy=gate_ar)
 
     detail_json = args.detail_json or args.output.parent / "samples_detail.json"
     detail_csv = args.detail_csv or args.output.parent / "samples_detail.csv"
@@ -707,6 +783,8 @@ def main(argv: list[str] | None = None) -> int:
             "error_type": type(exc).__name__,
             "tier": args.tier,
             "thresholds": thr,
+            "hard_gates": sorted(hard_thr.keys()),
+            "gate_answer_relevancy": gate_ar,
             "metrics": {},
             "by_language": {},
             "n": len(rows),
@@ -724,8 +802,13 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     report["thresholds"] = thr
+    report["hard_gates"] = sorted(hard_thr.keys())
+    report["gate_answer_relevancy"] = gate_ar
     report["tier"] = args.tier
-    report["passed"] = len(check_thresholds(report, thr)) == 0
+    fails = check_thresholds(report, thr, gate_answer_relevancy=gate_ar)
+    diag = diagnostic_threshold_notes(report, thr, gate_answer_relevancy=gate_ar)
+    report["diagnostic_notes"] = diag
+    report["passed"] = len(fails) == 0
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -741,11 +824,12 @@ def main(argv: list[str] | None = None) -> int:
         file=sys.stderr,
     )
 
-    fails = check_thresholds(report, thr)
+    if diag:
+        print("DIAGNOSTIC thresholds:", "; ".join(diag), file=sys.stderr)
     if fails:
         print("FAIL thresholds:", "; ".join(fails), file=sys.stderr)
         return 1
-    print("PASS thresholds", thr)
+    print("PASS hard gates", hard_thr)
     return 0
 
 
