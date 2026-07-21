@@ -17,7 +17,7 @@
 |-------|--------|
 | API | FastAPI (async) + SSE |
 | Orchestration | LangGraph |
-| Retrieval | Qdrant hybrid (dense + sparse) · `PREFER_BGE=true` 일 때 **BGE-M3** (hash offline fallback) |
+| Retrieval | Qdrant hybrid (dense + hashed log-TF sparse, 고전 BM25 아님) · `PREFER_BGE=true` 일 때 **BGE-M3** (hash offline fallback) |
 | Reranker | BGE-reranker-v2-m3 (lexical offline fallback) |
 | LLM (default) | **OpenAI gpt-4o-mini** (`LLM_PROVIDER=openai`) |
 | Eval | RAGAS-style runner (`app/eval`); faithfulness gate; AR diagnostic |

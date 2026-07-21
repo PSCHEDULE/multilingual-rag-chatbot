@@ -37,7 +37,7 @@
 ## 2. Fixed Technology Stack
 
 - **Backend**: FastAPI (async) + LangGraph
-- **Retrieval**: **Qdrant** 위 custom hybrid pipeline (dense + sparse); LlamaIndex를 유일한 검색 엔진으로 보지 않음
+- **Retrieval**: **Qdrant** 위 custom hybrid pipeline (dense + hashed log-TF sparse, RRF 융합; 고전 BM25 아님); LlamaIndex를 유일한 검색 엔진으로 보지 않음
 - **Indexing / helpers**: LlamaIndex core 및 관련 헬퍼가 코드베이스에서 ingestion/indexing 유틸을 지원할 수 있음
 - **Embedding**: `PREFER_BGE=true` 일 때 **BGE-M3** dense (optional `bge` dependency group); `PREFER_BGE=false` 일 때 **hash dense** offline/rollback
 - **Reranker**: BGE mode에서 **BGE-reranker-v2-m3** (CrossEncoder); hash mode 또는 BGE reranker 불가 시 **lexical** reranker

@@ -2,8 +2,18 @@
 
 ## Pipeline
 
-1. **Hybrid search (Qdrant)** — dense (BGE-M3 in production, hash embedder offline) + sparse BM25-like vectors, fused with RRF. Retrieve `top_n` (default **40**).
+1. **Hybrid search (Qdrant)** — dense (BGE-M3 in production, hash embedder offline) + **hashed log-TF sparse vectors** (not full BM25), fused with RRF. Retrieve `top_n` (default **40**).
 2. **Rerank** — BGE-reranker-v2-m3 (production) or lexical overlap (offline). Keep `top_k` (default **6**).
+
+### Sparse vectors (implementation note)
+
+Sparse encoding (`app.retrieval.embeddings.sparse_bm25_vector`) is a **deterministic hashed term-frequency** scheme:
+
+- tokenize with a multilingual word/CJK regex
+- hash each token into a fixed index space
+- store **1 + log(tf)** weights (log-TF style), not IDF / classic BM25 scoring
+
+Qdrant receives these sparse vectors for hybrid RRF fusion. Documentation and code names may still say “bm25” for historical reasons; do **not** treat the sparse path as a true BM25 implementation.
 
 Facade: `app.retrieval.hybrid.retrieve_and_rerank` logs and returns:
 
@@ -47,4 +57,9 @@ print(r.metrics)
 
 ## Metadata filters
 
-Supported payload filters: `language`, `category`, `source`. Prefer same-language chunks when `language` is set; omit filter for cross-lingual fallback.
+Allowlisted exact-match payload filters (chat `metadata_filters` and hybrid kwargs):
+`language`, `category`, `source`, `doc_type`, `faq_id`, `intent`.
+
+Automatic language filtering (`RETRIEVAL_LANGUAGE_FILTER`) still applies when no
+explicit `language` filter is supplied. Explicit request filters use Qdrant
+`MatchValue` conditions only (no arbitrary query injection).

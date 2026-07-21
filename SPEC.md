@@ -36,8 +36,8 @@ Key objectives:
 ## 2. Fixed Technology Stack
 
 - **Backend**: FastAPI (async) + LangGraph
-- **Retrieval**: Custom hybrid pipeline over **Qdrant** (dense + sparse); not
-  LlamaIndex-as-sole-retriever
+- **Retrieval**: Custom hybrid pipeline over **Qdrant** (dense + hashed log-TF
+  sparse vectors fused with RRF; not classic BM25); not LlamaIndex-as-sole-retriever
 - **Indexing / helpers**: LlamaIndex core and related helpers may support
   ingestion/indexing utilities where used in the codebase
 - **Embedding**: **BGE-M3** dense when `PREFER_BGE=true` (optional `bge`

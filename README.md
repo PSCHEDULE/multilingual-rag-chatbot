@@ -8,7 +8,7 @@ Production-oriented RAG chatbot with first-class support for **Korean, English, 
 |-------|--------|
 | API | FastAPI (async) + SSE |
 | Orchestration | LangGraph |
-| Retrieval | Qdrant hybrid (dense + sparse) · **BGE-M3** when `PREFER_BGE=true` (hash offline fallback) |
+| Retrieval | Qdrant hybrid (dense + hashed log-TF sparse, not classic BM25) · **BGE-M3** when `PREFER_BGE=true` (hash offline fallback) |
 | Reranker | BGE-reranker-v2-m3 (lexical offline fallback) |
 | LLM (default) | **OpenAI gpt-4o-mini** (`LLM_PROVIDER=openai`) |
 | Eval | RAGAS-style runner (`app/eval`); faithfulness gate; AR diagnostic |

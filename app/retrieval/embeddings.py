@@ -81,7 +81,10 @@ class BGEEmbedder(DenseEmbedder):
 
 def sparse_bm25_vector(text: str, *, dim_mod: int = 30_000) -> dict[str, list[Any]]:
     """
-    Very small sparse encoder: term frequency hashed into indices.
+    Deterministic hashed log-TF sparse encoder (not classic BM25).
+
+    Tokenize → hash tokens into a fixed index space → store ``1 + log(tf)``
+    weights. Historical function name retained for call-site stability.
 
     Returns Qdrant-compatible dict with ``indices`` and ``values``.
     """
@@ -175,7 +178,7 @@ def embed_for_index(
     settings: Settings | None = None,
     prefer_bge: bool = False,
 ) -> tuple[list[list[float]], list[dict[str, list[Any]]]]:
-    """Return dense vectors and sparse BM25-like vectors for each text."""
+    """Return dense vectors and hashed log-TF sparse vectors for each text."""
     _ = settings or get_settings()
     dense_model = get_dense_embedder(prefer_bge=prefer_bge)
     # Clear cache confusion: Offline when prefer_bge False

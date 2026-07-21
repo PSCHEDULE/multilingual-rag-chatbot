@@ -147,6 +147,18 @@ production approval.
    sparse/payload corpus inventory remains **manual preflight**.
 4. **Platform decisions** listed in §5.3 remain outside repository packaging.
 
+### 6.1 Deferred engineering debt (post full-file audit; not this milestone)
+
+Tracked for later work — **not** blocking M0–M9 repository completion:
+
+- Synchronous SSE / blocking graph work on the ASGI event loop
+- Process-local in-memory session store (multi-instance / restart)
+- Staging Compose image pin lag vs current Dockerfile HEAD
+- Docker base image digest pinning
+- Widget reconnect / accessibility polish
+- Development Compose publishing Qdrant host ports
+- Container healthcheck using `/health` rather than `/ready`
+
 ---
 
 ## 7. Next priority
